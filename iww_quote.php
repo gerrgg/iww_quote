@@ -8,11 +8,73 @@ Author: Gregory Bastianelli
 Author URI: http://d.iwantworkwear.com
 */
 add_action( 'wp_enqueue_scripts', 'iww_quote_scripts', 100);
+add_action( 'woocommerce_process_product_meta', 'iww_add_can_customize_save' );
+add_action( 'iww_quote_tab', 'bulk_quote_html', 1 );
+add_action( 'iww_quote_tab', 'custom_quote', 2 );
+
+add_shortcode( 'bulkquote', 'bulk_quote_form');
+add_shortcode( 'customize', 'custom_quote_form');
+
 function iww_quote_scripts(){
 	wp_enqueue_script('quote_js', plugins_url( 'iww_quote.js', __FILE__ ), array( 'jquery' ), rand(0,199), true);
 }
 
-add_action( 'iww_quote_tab', 'bulk_quote_html', 1 );
+function custom_quote(){
+	global $product;
+	$url = site_url() . '/customize/?id=' . $product->get_id();
+	?>
+	<h3 class="mt-2">Customization Quote</h3>
+	<p>Add your name or company logo. Select from screen printing, vinyl heat press or embroidery on most items. Quotes are typically processed within 1 business day.</p>
+	<a id="custom-quote-link" href="<?php echo $url; ?>" role="button" class="btn btn-primary">Customization Quote</a>
+	<?php
+}
+
+function custom_quote_form(){
+	$id = $_GET['id'];
+	$product = wc_get_product( $id );
+	if( $product ){
+		// echo $product->get_type();
+		?>
+		<div class="card">
+			<div class="card-header">
+				<b>Step 1: Item Options</b>
+			</div>
+			<form action="<?php echo esc_url( admin_url('admin-post.php') ); ?>" method="post" enctype="multipart/form-data">
+				<div class="card-body">
+					<table class="table">
+						<tr>
+							<td width="25%"><?php echo $product->get_image(); ?></td>
+							<td>
+								<p><?php echo $product->get_name(); ?></p>
+								<p><?php echo iww_get_color( $product ); ?></p>
+							</td>
+						</tr>
+					</table>
+				</div>
+				<?php get_customization_options( 2 ); ?>
+				<?php get_contact_information( 3 ); ?>
+				<input type="hidden" name="product[id]" value="<?php echo $product->id; ?>">
+				<input type="hidden" name="action" value="send_custom_quote">
+				<button type="submit" class="btn btn-primary btn-block">Submit</button>
+			</form>
+		</div>
+		<?php
+	}
+}
+
+function iww_get_color( $product ){
+	$atts = preg_split( "/, /", $product->get_attribute( 'pa_all_color' ) );
+	if( sizeof( $atts ) > 1 ){ ?>
+		<label>Color: </label>
+		<select class="form-control" name="product[color]">
+			<?php foreach( $atts as $att ) : ?>
+				<option value="<?php echo $att; ?>"><?php echo $att; ?></option>
+			<?php endforeach; ?>
+		</select> <?php
+	} else {
+		return '<p>Color: ' . $att . '</p>';
+	}
+}
 
 function bulk_quote_html(){
 	global $product;
@@ -21,6 +83,7 @@ function bulk_quote_html(){
 	<h3>Bulk Quote</h3>
 	<p>Submit a request for bulk discount rates. Use this for large quantity orders that exceed the item quantity price breaks. Quotes are typically processed within 1 business day.</p>
 	<a id="bulk-quote-link" href="<?php echo $url; ?>" role="button" class="btn btn-primary">Free Bulk Quote</a>
+	<hr style="width: unset; margin-top: 1rem; margin-bottom: unset; border-top: 1px solid rgba(0, 0, 0, 0.15);">
 	<?php
 }
 
@@ -44,8 +107,6 @@ function iww_add_can_customize(){
   echo '</div>';
 }
 
-// Save Fields
-add_action( 'woocommerce_process_product_meta', 'iww_add_can_customize_save' );
 function iww_add_can_customize_save( $post_id ){
   $woocommerce_checkbox = isset( $_POST['iww_can_customize'] ) ? 1 : 0;
 	update_post_meta( $post_id, 'iww_can_customize', $woocommerce_checkbox );
@@ -81,43 +142,71 @@ function bulk_quote_form(){
 			</div>
 		</div>
 		<br>
-		<div class="card">
-			<div class="card-header">
-				<b>Step 2: Contact Information</b>
-			</div>
-			<div class="card-body">
-				<div class="card-title">Contact Information</div>
-					<div class="form-group">
-						<label>Name:</label>
-						<input type="text" class="form-control" name="name">
-					</div>
-					<div class="form-group">
-						<label>Email:</label>
-						<input type="text" class="form-control" name="email" required>
-						<small>Used only for further communications</small>
-					</div>
-					<div class="form-group">
-						<label>Company:</label>
-						<input type="text" class="form-control" name="company">
-					</div>
-					<div class="form-group">
-						<label>Street Address:</label>
-						<input type="text" class="form-control" name="street">
-					</div>
-					<div class="form-group">
-						<label>Zip:</label>
-						<input type="text" class="form-control" name="zip">
-						<small>Used for shipping estimate.</small>
-					</div>
-					<input type="hidden" name="action" value="send_bulk_quote">
-					<button type="submit" class="btn btn-iww">Submit</button>
-				</div>
-			</div>
+		<?php get_contact_information(); ?>
+		<input type="hidden" name="action" value="send_bulk_quote">
+		<button type="submit" class="btn btn-iww">Submit</button>
 		</form>
 		<?php
 	}
 }
-add_shortcode( 'bulkquote', 'bulk_quote_form');
+
+function get_contact_information( $step = 2 ){
+	?>
+	<div class="card">
+		<div class="card-header">
+			<b>Step <?php echo $step; ?>: Contact Information</b>
+		</div>
+		<div class="card-body">
+			<div class="card-title">Contact Information</div>
+				<div class="form-group">
+					<label>Name:</label>
+					<input type="text" class="form-control" name="name">
+				</div>
+				<div class="form-group">
+					<label>Email:</label>
+					<input type="text" class="form-control" name="email" required>
+					<small>Used only for further communications</small>
+				</div>
+				<div class="form-group">
+					<label>Company:</label>
+					<input type="text" class="form-control" name="company">
+				</div>
+				<div class="form-group">
+					<label>Street Address:</label>
+					<input type="text" class="form-control" name="street">
+				</div>
+				<div class="form-group">
+					<label>Zip:</label>
+					<input type="text" class="form-control" name="zip">
+					<small>Used for shipping estimate.</small>
+				</div>
+			</div>
+		</div>
+		<?php
+}
+
+function get_customization_options( $step = 3 ){
+	?>
+	<div class="card">
+		<div class="card-header">
+			<b>Step <?php echo $step; ?>: Customization Options</b>
+		</div>
+		<div class="card-body">
+			<label>Where would you like your customization?</label>
+			<div class="form-check form-check-inline">
+			  <input class="form-check-input custom-loc" type="checkbox" value="front">
+			  <label class="form-check-label" for="loc_front">Front</label>
+			</div>
+			<div class="form-check form-check-inline">
+				<input class="form-check-input custom-loc" type="checkbox" value="back">
+			  <label class="form-check-label" for="loc_front">Back</label>
+			</div>
+			<div id="customize-loc"></div>
+
+		</div>
+	</div>
+	<?php
+}
 
 function iww_var_form( $children ){
 	if( !empty( $children ) ){
@@ -182,5 +271,19 @@ function send_bulk_quote(){
 	exit;
 }
 
+function send_custom_quote(){
+	$quote = array();
+	var_dump($_POST);
+
+	$headers = array('Reply-To: '. $_POST['email']);
+
+	// if( !empty( $message ) ) wp_mail( 'gregbast1994.com', 'Request for quote', $message, $headers );
+	// wp_mail( $_POST['email'], 'We got your quote request!', 'We got your email, expect a response same or next business day! <br> Thank you!<br><br> Here is a copy of your quote request for your reference:<br><br>' . $message );
+	// wp_redirect( '/' );
+	exit;
+}
+
 add_action( 'admin_post_nopriv_send_bulk_quote', 'send_bulk_quote' );
 add_action( 'admin_post_send_bulk_quote', 'send_bulk_quote' );
+add_action( 'admin_post_nopriv_send_custom_quote', 'send_custom_quote' );
+add_action( 'admin_post_send_custom_quote', 'send_custom_quote' );
