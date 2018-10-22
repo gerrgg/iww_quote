@@ -23,8 +23,8 @@ jQuery(document).ready(function( $ ){
 
     $form.append('<h6 class="my-1">' + jsUcfirst(loc) + ' Placement</h6>');
     $form.append('<label>Are you adding a logo or text?</label>');
-    $form.append( create_radio_button( loc, 'logo', 'Company Logo / Design' ) );
-    $form.append( create_radio_button( loc, 'text', 'Basic Text' ) );
+    $form.append( create_radio_button( loc, 'location[' + loc + '][type]', 'logo', 'Company Logo / Design' ) );
+    $form.append( create_radio_button( loc, 'location[' + loc + '][type]', 'text', 'Basic Text' ) );
 
     $placement = $('<div/>', {
       id: 'placement-' + loc,
@@ -46,7 +46,7 @@ jQuery(document).ready(function( $ ){
       id: loc +'-custom-'+ type +'-form',
       class: 'form-group my-1'
     });
-    $form.append( ( type == 'text' ) ? get_text_options() : get_logo_options() );
+    $form.append( ( type == 'text' ) ? get_text_options( loc ) : get_logo_options( loc ) );
     return $form;
   }
 
@@ -62,18 +62,18 @@ jQuery(document).ready(function( $ ){
     });
     $comments = $('<textarea/>', {
       id: 'comments',
-      name: 'comments',
+      name: 'location['+ loc +'][comments]',
       class: 'form-control'
     });
 
     $text.append( '<br><label for="text">What text would you like printed?</label>' );
-    $text.append( '<input type="text" name="text" id="text" class="form-control">' );
+    $text.append( '<input type="text" name="location['+ loc +'][string]" id="text" class="form-control">' );
     $text.append( '<br><label>Placement Comments: </label>' );
     $text.append( $comments );
     return $text;
   }
 
-  function get_logo_options(){
+  function get_logo_options( loc ){
     $upload = $('<div/>', {
       id: 'logo_form_options',
       class: 'form-group'
@@ -81,12 +81,12 @@ jQuery(document).ready(function( $ ){
     $file_input = $('<input/>', {
       type: 'file',
       id: 'logo',
-      name: 'logo',
+      name: loc,
       class: 'my-3'
     })
     $comments = $('<textarea/>', {
       id: 'comments',
-      name: 'comments',
+      name: 'location['+loc+'][comments]',
       class: 'form-control'
     });
     $upload.append( $file_input );
@@ -99,7 +99,7 @@ jQuery(document).ready(function( $ ){
     $('#loc-' + loc).remove();
   }
 
-  function create_radio_button(name, value, text = value){
+  function create_radio_button(id, name, value, text = value){
     $wrapper = $('<div/>', {
       class: 'form-check'
     });
@@ -107,7 +107,7 @@ jQuery(document).ready(function( $ ){
       class: 'form-check-input',
       style: 'margin-top: .3rem',
       type: 'radio',
-      id: name,
+      id: id,
       name: name,
       value : value
     });

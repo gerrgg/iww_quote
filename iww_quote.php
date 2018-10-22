@@ -47,6 +47,11 @@ function custom_quote_form(){
 							<td>
 								<p><?php echo $product->get_name(); ?></p>
 								<p><?php echo iww_get_color( $product ); ?></p>
+								<p>
+									<label>Quantity: </label>
+									<input type="tel" class="form-control" name="product[qty]" />
+									<small>Just a rough estimate for now.</small>
+								</p>
 							</td>
 						</tr>
 					</table>
@@ -271,16 +276,90 @@ function send_bulk_quote(){
 	exit;
 }
 
+function iww_process_img( $files ){
+	$arr = array();
+	$upload_dir = wp_upload_dir();
+	foreach( $files as $file ){
+		// pre_arr($file);
+		$name = make_random_name();
+		$imageFileType = strtolower( pathinfo( $file['name'], PATHINFO_EXTENSION ) );
+		$target_file = $upload_dir['basedir'] . '/' . $name . '.' . $imageFileType;
+		$url = $upload_dir['baseurl'] . '/' . $name . '.' . $imageFileType;
+		$is_image = getimagesize( $file['tmp_name'] );
+
+		if( $is_image != false ){
+			if ( move_uploaded_file( $file['tmp_name'], $target_file ) ){
+				echo $target_file;
+				array_push( $arr, $target_file );
+			}
+		}
+	}
+	return $arr;
+}
+
+function iww_process_locations( $loc_arr ){
+	$str = '<h4 style="margin-bottom: 0px;">Customizations: </h4>';
+	foreach( $loc_arr as $key => $location ){
+		$str .= '<br>' . ucwords( $key ) . ': <br>';
+		foreach( $location as $key => $attr ){
+			$str .= ucwords( $key ) . ': ' . $attr . '<br>';
+		}
+	}
+	return $str;
+}
+
+
 function send_custom_quote(){
-	$quote = array();
-	var_dump($_POST);
+	$target_files = array();
+	$message = '';
+	$subject = $_POST['name'] . ' is looking for a custom quote!';
+	$product = wc_get_product( $_POST['product']['id'] );
+
+	$message .= '<h3>Custom Quote Request</h3><br>';
+	if( $product ){
+		$message .= 'Product: ' . $product->get_name() '<br>';
+		$message .= 'QTY: ' . $_POST['product']['qty'];
+	}
+
+	if( !empty( $_POST['location'] ) ){
+		$message .= iww_process_locations( $_POST['location'] );
+	}
+
+	$subject = $_POST['name'] . ' is looking for a custom quote.';
+
+	$message .= '<h4>Contact Information</h4>';
+	$message .= 'Name: ' . $_POST['name'] . '<br>';
+	$message .= 'Email: ' . $_POST['email'] . '<br>';
+	$message .= 'Company: ' . $_POST['company'] . '<br>';
+	$message .= 'Street: ' . $_POST['street'] . '<br>';
+	$message .= 'Zip: ' . $_POST['zip'] . '<br>';
+
+	// handle uploaded images
+	if( isset( $_FILES ) ){
+		$target_files = iww_process_img( $_FILES );
+	}
 
 	$headers = array('Reply-To: '. $_POST['email']);
 
-	// if( !empty( $message ) ) wp_mail( 'gregbast1994.com', 'Request for quote', $message, $headers );
-	// wp_mail( $_POST['email'], 'We got your quote request!', 'We got your email, expect a response same or next business day! <br> Thank you!<br><br> Here is a copy of your quote request for your reference:<br><br>' . $message );
-	// wp_redirect( '/' );
+	wp_mail( 'gregbast1994@gmail.com', $subject, $message, $headers, $target_files );
+
+	wp_mail( $_POST['email'],
+	'We got your custom quote request',
+	'We got your qoute request, expect a response same or next business day. <br><br> For your reference, this is the email we got: <br>' . $message  );
+
+	iww_rm_files( $target_files );
+	wp_redirect( '/' );
 	exit;
+}
+
+function iww_rm_files( $files ){
+	foreach( $files as $file ){
+		unlink( $file );
+	}
+}
+
+function make_random_name(){
+	return sha1( microtime() );
 }
 
 add_action( 'admin_post_nopriv_send_bulk_quote', 'send_bulk_quote' );
