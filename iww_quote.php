@@ -270,7 +270,7 @@ function send_bulk_quote(){
 	}
 
 	echo $message;
-	// if( !empty( $message ) ) wp_mail( 'gregbast1994.com', 'Request for quote', $message, $headers );
+	if( !empty( $message ) ) wp_mail( 'info@iwantworkwear.com', 'Request for quote', $message, $headers );
 	wp_mail( $_POST['email'], 'We got your quote request!', 'We got your email, expect a response same or next business day! <br> Thank you!<br><br> Here is a copy of your quote request for your reference:<br><br>' . $message );
 	wp_redirect( '/' );
 	exit;
@@ -317,7 +317,7 @@ function send_custom_quote(){
 
 	$message .= '<h3>Custom Quote Request</h3><br>';
 	if( $product ){
-		$message .= 'Product: ' . $product->get_name() '<br>';
+		$message .= 'Product: ' . $product->get_name() . '<br>';
 		$message .= 'QTY: ' . $_POST['product']['qty'];
 	}
 
@@ -341,11 +341,11 @@ function send_custom_quote(){
 
 	$headers = array('Reply-To: '. $_POST['email']);
 
-	wp_mail( 'gregbast1994@gmail.com', $subject, $message, $headers, $target_files );
+	wp_mail( 'info@iwantworkwear.com', $subject, $message, $headers, $target_files );
 
 	wp_mail( $_POST['email'],
 	'We got your custom quote request',
-	'We got your qoute request, expect a response same or next business day. <br><br> For your reference, this is the email we got: <br>' . $message  );
+	'We got your quote request, expect a response same or next business day. <br><br> For your reference, this is the email we got: <br>' . $message  );
 
 	iww_rm_files( $target_files );
 	wp_redirect( '/' );
