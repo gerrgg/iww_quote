@@ -288,9 +288,10 @@ function iww_process_img( $files ){
 		$is_image = getimagesize( $file['tmp_name'] );
 
 		if( $is_image != false ){
-			if ( move_uploaded_file( $file['tmp_name'], $target_file ) ){
-				echo $target_file;
-				array_push( $arr, $target_file );
+			if($imageFileType == "jpg" || $imageFileType == "png" || $imageFileType == "jpeg" || $imageFileType == "gif" ){
+				if ( move_uploaded_file( $file['tmp_name'], $target_file ) ){
+					array_push( $arr, $target_file );
+				}
 			}
 		}
 	}
